@@ -272,6 +272,13 @@ pub struct Config {
     #[dynamic(default)]
     pub enable_checksum_rectangular_area: bool,
 
+    /// If true, ignore OSC (Operating System Command) escape sequences
+    /// from programs that attempt to change the tab or window title.
+    /// This does not affect programmatic title changes made via the
+    /// wezterm CLI or other internal APIs.
+    #[dynamic(default)]
+    pub disable_title_change_from_programs: bool,
+
     /// Specifies the width of a new window, expressed in character cells
     #[dynamic(default = "default_initial_cols", validate = "validate_row_or_col")]
     pub initial_cols: u16,

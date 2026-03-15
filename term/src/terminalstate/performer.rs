@@ -744,30 +744,42 @@ impl<'a> Performer<'a> {
         match osc {
             OperatingSystemCommand::SetIconNameSun(title)
             | OperatingSystemCommand::SetIconName(title) => {
-                if title.is_empty() {
-                    self.icon_title = None;
+                if self.config.disable_title_change_from_programs() {
+                    debug!("suppressed icon title change from OSC");
                 } else {
-                    self.icon_title = Some(title);
-                }
-                let title = self.icon_title.clone();
-                if let Some(handler) = self.alert_handler.as_mut() {
-                    handler.alert(Alert::IconTitleChanged(title));
+                    if title.is_empty() {
+                        self.icon_title = None;
+                    } else {
+                        self.icon_title = Some(title);
+                    }
+                    let title = self.icon_title.clone();
+                    if let Some(handler) = self.alert_handler.as_mut() {
+                        handler.alert(Alert::IconTitleChanged(title));
+                    }
                 }
             }
             OperatingSystemCommand::SetIconNameAndWindowTitle(title) => {
-                self.icon_title.take();
-                self.title = title.clone();
-                if let Some(handler) = self.alert_handler.as_mut() {
-                    handler.alert(Alert::WindowTitleChanged(title.clone()));
-                    handler.alert(Alert::IconTitleChanged(Some(title)));
+                if self.config.disable_title_change_from_programs() {
+                    debug!("suppressed icon+window title change from OSC");
+                } else {
+                    self.icon_title.take();
+                    self.title = title.clone();
+                    if let Some(handler) = self.alert_handler.as_mut() {
+                        handler.alert(Alert::WindowTitleChanged(title.clone()));
+                        handler.alert(Alert::IconTitleChanged(Some(title)));
+                    }
                 }
             }
 
             OperatingSystemCommand::SetWindowTitleSun(title)
             | OperatingSystemCommand::SetWindowTitle(title) => {
-                self.title = title.clone();
-                if let Some(handler) = self.alert_handler.as_mut() {
-                    handler.alert(Alert::WindowTitleChanged(title));
+                if self.config.disable_title_change_from_programs() {
+                    debug!("suppressed window title change from OSC");
+                } else {
+                    self.title = title.clone();
+                    if let Some(handler) = self.alert_handler.as_mut() {
+                        handler.alert(Alert::WindowTitleChanged(title));
+                    }
                 }
             }
             OperatingSystemCommand::SetHyperlink(link) => {

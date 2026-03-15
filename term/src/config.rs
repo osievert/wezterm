@@ -224,6 +224,13 @@ pub trait TerminalConfiguration: Downcast + std::fmt::Debug + Send + Sync {
         false
     }
 
+    /// If true, the terminal should ignore OSC sequences from programs
+    /// that attempt to change the tab or window title.  Defaults to
+    /// `false` (i.e., honor programmatic title changes via OSC).
+    fn disable_title_change_from_programs(&self) -> bool {
+        false
+    }
+
     fn log_unknown_escape_sequences(&self) -> bool {
         false
     }

@@ -402,12 +402,24 @@ impl SessionHandler {
                             let mut tabs = vec![];
                             let mut tab_titles = vec![];
                             let mut window_titles = HashMap::new();
+                            let suppress = config::configuration().disable_title_change_from_programs;
                             for window_id in mux.iter_windows().into_iter() {
                                 let window = mux.get_window(window_id).unwrap();
-                                window_titles.insert(window_id, window.get_title().to_string());
+                                window_titles.insert(
+                                    window_id,
+                                    if suppress {
+                                        String::new()
+                                    } else {
+                                        window.get_title().to_string()
+                                    },
+                                );
                                 for tab in window.iter_tabs() {
                                     tabs.push(tab.codec_pane_tree());
-                                    tab_titles.push(tab.get_title());
+                                    if suppress {
+                                        tab_titles.push(String::new());
+                                    } else {
+                                        tab_titles.push(tab.get_title());
+                                    }
                                 }
                             }
                             log::trace!("ListPanes {tabs:#?} {tab_titles:?}");
@@ -897,7 +909,11 @@ impl SessionHandler {
                                 .get_window_mut(window_id)
                                 .ok_or_else(|| anyhow!("no such window {window_id}"))?;
 
-                            window.set_title(&title);
+                            // This PDU is an explicit client-initiated window title
+                            // change (e.g. `wezterm cli set-window-title`). Apply it
+                            // forcefully so it works even when programmatic OSC-driven
+                            // updates are disabled.
+                            window.set_title_force(&title);
 
                             Ok(Pdu::UnitResponse(UnitResponse {}))
                         },
@@ -915,7 +931,12 @@ impl SessionHandler {
                                 .get_tab(tab_id)
                                 .ok_or_else(|| anyhow!("no such tab {tab_id}"))?;
 
-                            tab.set_title(&title);
+                            // This PDU originates from an explicit client request
+                            // such as `wezterm cli set-tab-title`/`set-window-title`.
+                            // We apply it forcefully so that user-initiated changes
+                            // still work even when `disable_title_change_from_programs`
+                            // is enabled.
+                            tab.set_title_force(&title);
 
                             Ok(Pdu::UnitResponse(UnitResponse {}))
                         },

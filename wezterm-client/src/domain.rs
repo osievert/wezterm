@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use codec::{ListPanesResponse, SpawnV2, SplitPane};
 use config::keyassignment::SpawnTabDomain;
 use config::{SshDomain, TlsDomainClient, UnixDomain};
+use config::configuration;
 use mux::connui::{ConnectionUI, ConnectionUIParams};
 use mux::domain::{alloc_domain_id, Domain, DomainId, DomainState, SplitSource};
 use mux::pane::{Pane, PaneId};
@@ -485,13 +486,23 @@ impl ClientDomain {
         if let Some(inner) = self.inner() {
             if let Some(local_window_id) = inner.remote_to_local_window(remote_window_id) {
                 if let Some(mut window) = Mux::get().get_window_mut(local_window_id) {
-                    window.set_title(&title);
+                    // This change originated remotely; the server should
+                    // have applied any explicit client-initiated update
+                    // forcefully. Mirror that here so explicit CLI-driven
+                    // changes still take effect on the local side.
+                    window.set_title_force(&title);
                 }
             }
         }
     }
 
     pub fn process_remote_tab_title_change(&self, remote_tab_id: TabId, title: String) {
+        if configuration().disable_title_change_from_programs {
+            // Honor the user's preference to ignore programmatic title changes
+            // coming from remote/automatic sources.
+            return;
+        }
+
         if let Some(inner) = self.inner() {
             if let Some(local_tab_id) = inner.remote_to_local_tab_id(remote_tab_id) {
                 if let Some(tab) = Mux::get().get_tab(local_tab_id) {

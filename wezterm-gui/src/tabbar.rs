@@ -219,7 +219,11 @@ fn compute_tab_title(
 
             if let Some(pane) = &tab.active_pane {
                 let mut title = if tab.tab_title.is_empty() {
-                    pane.title.clone()
+                    if config.disable_title_change_from_programs {
+                        format!("{}", tab.tab_index + 1)
+                    } else {
+                        pane.title.clone()
+                    }
                 } else {
                     tab.tab_title.clone()
                 };

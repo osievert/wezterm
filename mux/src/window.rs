@@ -42,6 +42,22 @@ impl Window {
 
     /// Set window title, notifying listeners if it changed.
     pub fn set_title(&mut self, title: &str) {
+        // If the user has configured that programs should not be
+        // allowed to change the window title, ignore requests that
+        // originate from programmatic sources. Explicit user/CLI-driven
+        // requests should call `set_title_force` to override this guard.
+        if config::configuration().disable_title_change_from_programs {
+            return;
+        }
+
+        self.set_title_force(title);
+    }
+
+    /// Forcefully set the window title regardless of any configuration
+    /// that might suppress programmatic title changes. This is intended
+    /// for explicit user/CLI-initiated updates that should override the
+    /// `disable_title_change_from_programs` setting.
+    pub fn set_title_force(&mut self, title: &str) {
         if self.title != title {
             self.title = title.to_string();
             Mux::try_get().map(|mux| {
