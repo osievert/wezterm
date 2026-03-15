@@ -2060,14 +2060,24 @@ impl TermWindow {
                 } else {
                     if let (Some(pos), Some(tab)) = (active_pane, active_tab) {
                         if num_tabs == 1 {
-                            format!("{}{}", if pos.is_zoomed { "[Z] " } else { "" }, pos.title)
+                            let pane_title = if self.config.disable_title_change_from_programs {
+                                "".to_string()
+                            } else {
+                                pos.title.clone()
+                            };
+                            format!("{}{}", if pos.is_zoomed { "[Z] " } else { "" }, pane_title)
                         } else {
+                            let pane_title = if self.config.disable_title_change_from_programs {
+                                "".to_string()
+                            } else {
+                                pos.title.clone()
+                            };
                             format!(
                                 "{}[{}/{}] {}",
                                 if pos.is_zoomed { "[Z] " } else { "" },
                                 tab.tab_index + 1,
                                 num_tabs,
-                                pos.title
+                                pane_title
                             )
                         }
                     } else {
@@ -2078,7 +2088,23 @@ impl TermWindow {
         };
 
         if let Some(window) = self.window.as_ref() {
-            window.set_title(&title);
+            // If programmatic title changes are disabled, only update the
+            // OS window title when the mux window has an explicit title
+            // (which is how we represent CLI/user-initiated changes). If
+            // not, skip setting the OS title so programs cannot overwrite it.
+            let mux_window_title = Mux::get()
+                .get_window(self.mux_window_id)
+                .map(|w| w.get_title().to_string())
+                .unwrap_or_default();
+
+            if !self.config.disable_title_change_from_programs || !mux_window_title.is_empty() {
+                let final_title = if !mux_window_title.is_empty() {
+                    mux_window_title
+                } else {
+                    title.clone()
+                };
+                window.set_title(&final_title);
+            }
 
             let show_tab_bar = if num_tabs == 1 {
                 self.config.enable_tab_bar && !self.config.hide_tab_bar_if_only_one_tab
@@ -3454,7 +3480,13 @@ impl TermWindow {
             height: pos.height,
             pixel_width: pos.pixel_width,
             pixel_height: pos.pixel_height,
-            title: pos.pane.get_title(),
+            title: {
+                if configuration().disable_title_change_from_programs {
+                    format!("{}", pos.index)
+                } else {
+                    pos.pane.get_title()
+                }
+            },
             user_vars: pos.pane.copy_user_vars(),
             progress: pos.pane.get_progress(),
         }

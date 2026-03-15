@@ -521,6 +521,21 @@ impl Tab {
     }
 
     pub fn set_title(&self, title: &str) {
+        // If the user has configured that programs should not be allowed
+        // to change tab titles, ignore requests that originate from
+        // programmatic sources. Explicit user/CLI-driven requests should
+        // call `set_title_force` to override this guard.
+        if configuration().disable_title_change_from_programs {
+            return;
+        }
+
+        self.set_title_force(title);
+    }
+
+    /// Forcefully set the tab title regardless of the
+    /// `disable_title_change_from_programs` setting. This should be used
+    /// for explicit user/CLI-initiated title changes.
+    pub fn set_title_force(&self, title: &str) {
         let mut inner = self.inner.lock();
         if inner.title != title {
             inner.title = title.to_string();
