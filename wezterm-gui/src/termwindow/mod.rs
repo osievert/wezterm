@@ -2059,43 +2059,24 @@ impl TermWindow {
                 if !window_title.is_empty() {
                     window_title
                 } else if let (Some(pos), Some(tab)) = (active_pane, active_tab) {
+                    let pane_title = if self.config.disable_title_change_from_programs {
+                        "".to_string()
+                    } else {
+                        pos.title.clone()
+                    };
                     if tabs_count == 1 {
-                        format!("{}{}", if pos.is_zoomed { "[Z] " } else { "" }, pos.title)
+                        format!("{}{}", if pos.is_zoomed { "[Z] " } else { "" }, pane_title)
                     } else {
                         format!(
                             "{}[{}/{}] {}",
                             if pos.is_zoomed { "[Z] " } else { "" },
                             tab.tab_index + 1,
                             tabs_count,
-                            pos.title
+                            pane_title
                         )
                     }
                 } else {
-                    if let (Some(pos), Some(tab)) = (active_pane, active_tab) {
-                        if tabs_count == 1 {
-                            let pane_title = if self.config.disable_title_change_from_programs {
-                                "".to_string()
-                            } else {
-                                pos.title.clone()
-                            };
-                            format!("{}{}", if pos.is_zoomed { "[Z] " } else { "" }, pane_title)
-                        } else {
-                            let pane_title = if self.config.disable_title_change_from_programs {
-                                "".to_string()
-                            } else {
-                                pos.title.clone()
-                            };
-                            format!(
-                                "{}[{}/{}] {}",
-                                if pos.is_zoomed { "[Z] " } else { "" },
-                                tab.tab_index + 1,
-                                tabs_count,
-                                pane_title
-                            )
-                        }
-                    } else {
-                        "".to_string()
-                    }
+                    "".to_string()
                 }
             }
         };
